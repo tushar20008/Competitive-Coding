@@ -1,4 +1,5 @@
 # Competitive-Coding
+- All the solutions are written in C++ language.
 
 Problem Solving using different kinds of algorithms like:
 
@@ -12,3 +13,4 @@ Problem Solving using different kinds of algorithms like:
 - Arithmetic and Number Theory
 - Computational Geometry
 - String Pattern Matching , Trie, KMP , Suffix Array
+
