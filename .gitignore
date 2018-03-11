@@ -1,2 +1,5 @@
 # Ignore all cpp execution files
 *.exe
+
+#Ignore Testing folder
+Testing
