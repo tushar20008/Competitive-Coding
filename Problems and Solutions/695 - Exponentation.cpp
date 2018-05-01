@@ -12,7 +12,6 @@ typedef struct
 	int signbit,lastdigit;	
 } bignum;
 
-void sub_bignum(bignum a, bignum b, bignum &c);
 void initialize_bignum(bignum &n)
 {
 	memset(n.digits,0,sizeof(n.digits));
@@ -21,7 +20,6 @@ void initialize_bignum(bignum &n)
 		n.digits[i]=(char)0;
 	*/
 	n.lastdigit=0;
-	n.signbit=PLUS;
 }
 
 void zero_justify(bignum &n)
@@ -36,29 +34,14 @@ void add_bignum(bignum a, bignum b, bignum &c)
 {
 	initialize_bignum(c);
 	
-	if(a.signbit==b.signbit)
-		c.signbit=a.signbit;
-	else
-	{
-		if(a.signbit==MINUS)
-		{
-			a.signbit=PLUS;
-			sub_bignum(b,a,c);
-			a.signbit=PLUS;
-		}
-		else
-		{
-			b.signbit=PLUS;
-			sub_bignum(a,b,c);
-			b.signbit=PLUS;
-		}
-		return;
-	}
+	c.signbit=a.signbit;
 	c.lastdigit=max(a.lastdigit,b.lastdigit)+1;
+	//cout<<a.lastdigit<<" "<<b.lastdigit<<endl;
 	int carry=0;
 	
 	for(int i=0; i<=c.lastdigit; i++)
 	{
+		//cout<<carry<<" "<<a.digits[i]<<" "<<b.digits[i]<<endl;
 		c.digits[i]=(char)((carry+a.digits[i]+b.digits[i])%10);
 		carry=(carry+a.digits[i]+b.digits[i])/10;
 	}
@@ -82,17 +65,31 @@ void digit_shift(bignum &n, int d)
 
 void mult_bignum(bignum a, bignum b, bignum &c)
 {
+	//cout<<a.lastdigit<<"	"<<b.lastdigit<<endl;
 	bignum tmp[11];
 	initialize_bignum(c);
 	initialize_bignum(tmp[0]);
 	for(int i=1; i<10; i++)
+	{
 		add_bignum(tmp[i-1],a,tmp[i]);
-
+		/*
+		for(int j=tmp[i].lastdigit; j>=0; j--)
+			cout<<(int)tmp[i].digits[j];
+		cout<<endl;
+		*/
+	}
 	for(int i=b.lastdigit; i>=0; i--)
 	{
-		
+		//cout<<(int)b.digits[i]<<endl;
 		add_bignum(c,tmp[(int)b.digits[i]],tmp[10]);
 		c=tmp[10];
+		/*
+		for(int j=1; j<=b.digits[i]; j++)
+		{
+			add_bignum(c,a,tmp);
+			c=tmp;
+		}
+		*/
 		if(i!=0)
 			digit_shift(c,1);
 	}
@@ -100,97 +97,16 @@ void mult_bignum(bignum a, bignum b, bignum &c)
 	zero_justify(c);
 }
 
-int compare_bignum(bignum a, bignum b)
-{
-	if(a.signbit==MINUS && b.signbit==PLUS)
-		return PLUS;
-	if(a.signbit==PLUS && b.signbit==MINUS)
-		return MINUS;
-	if(b.lastdigit>a.lastdigit)
-		return PLUS*a.signbit;
-	if(a.lastdigit>b.lastdigit)
-		return MINUS*a.signbit;
-	
-	for(int i=a.lastdigit; i>=0; i--)
-	{
-		if(a.digits[i]>b.digits[i])
-			return MINUS*a.signbit;
-		if(b.digits[i]>a.digits[i])
-			return PLUS*a.signbit;	
-	}	
-	return 0;
-}
-void sub_bignum(bignum a, bignum b, bignum &c)
-{
-	//cout<<"SIGN		"<<a.signbit<<" "<<b.signbit<<endl;
-	int borrow, v, i;
-	if(a.signbit==MINUS || b.signbit==MINUS)
-	{
-		b.signbit*=-1;
-		add_bignum(a,b,c);
-		b.signbit*=-1;
-		return;
-	}
-	if(compare_bignum(a,b)==PLUS)
-	{
-		sub_bignum(b,a,c);
-		c.signbit=MINUS;
-		return;
-	}
-	c.lastdigit=max(a.lastdigit,b.lastdigit);
-	borrow=0;
-	
-	for(int i=0; i<=c.lastdigit; i++)
-	{
-		v=a.digits[i]-b.digits[i]-borrow;
-		if(a.digits[i]>0)
-			borrow=0;
-		if(v<0)
-		{
-			v=v+10;
-			borrow=1;
-		}
-		c.digits[i]=(char)v%10;
-	}
-	zero_justify(c);
-}
-
-void div_bignum(bignum a, bignum b, bignum &c)
-{
-	bignum row, tmp;
-	//int a_sign, b_sign;
-	
-	initialize_bignum(c);
-	initialize_bignum(row);
-	initialize_bignum(tmp);
-
-	c.signbit=a.signbit*b.signbit;
-	c.lastdigit=a.lastdigit;
-	a.signbit=PLUS;
-	b.signbit=PLUS;
-	
-	for(int i=a.lastdigit; i>=0; i--)
-	{
-		digit_shift(row,1);
-		row.digits[0]=a.digits[i];
-		c.digits[i]=0;
-		while(compare_bignum(row,b)!=PLUS)
-		{
-			c.digits[i]++;
-			sub_bignum(row,b,tmp);
-			row=tmp;
-		}
-	}	
-	zero_justify(c);
-}
-
 void int_to_bignum(int s, bignum &n)
 {
 	int i,t;
 	
+	/*
 	if(s>=0) n.signbit=PLUS;
 	else n.signbit=MINUS;
-
+	*/
+	
+	n.signbit=PLUS;
 	n.lastdigit=0;
 	
 	/*
@@ -209,7 +125,56 @@ void int_to_bignum(int s, bignum &n)
 	}	
 	//cout<<n.lastdigit<<endl;
 }
-
+/*
+bignum Exp2(bignum *temp, int x, int y)
+{
+	//cout<<x<<" "<<y<<endl;
+   	if (y%2 == 0)
+    {
+    	mult_bignum(*temp,*temp,*temp);
+    	return *temp;
+	}
+    else
+    {
+    	bignum x_big;
+        int_to_bignum(x,x_big);
+        mult_bignum(*temp,*temp,*temp);
+        mult_bignum(*temp,x_big,*temp);
+        return *temp;
+	}
+}
+*/
+/*
+bignum Exp(bignum *temp, int x, int y)
+{
+	cout<<x<<" "<<y<<endl;
+	if( y == 0)
+    {
+    	int_to_bignum(1,*temp);
+		return *temp;
+	}
+    else
+		*temp = Exp(temp,x, y/2);
+	cout<<x<<" "<<y<<endl;
+	if (y%2 == 0)
+    {
+    	long u=clock();
+    	mult_bignum(*temp,*temp,*temp);
+    	long v=clock();
+		cout<<"MulT		"<<(float) (v-u)/CLOCKS_PER_SEC<<endl;	
+    	return *temp;
+	}
+    else
+    {
+    	bignum x_big;
+        int_to_bignum(x,x_big);
+        mult_bignum(*temp,*temp,*temp);
+        mult_bignum(*temp,x_big,*temp);
+        return *temp;
+	}	
+	//return Exp2(temp, x, y);
+}
+*/
 bignum FastExp(bignum *temp, int x, int y)
 {
 	if( y == 0)
@@ -236,22 +201,6 @@ int main()			// Exponentiation
 {
 	ios_base::sync_with_stdio(false);					// These 2 Lines to increase I/O Speed
     cin.tie(NULL); 
-    int x,y;
-    while(cin>>x>>y)
-    {
-    	bignum X,Y,ans;
-    	int_to_bignum(x,X);
-    	int_to_bignum(y,Y);
-    	div_bignum(X,Y,ans);
-    	if(ans.signbit==-1)
-    		cout<<"-";
-    	else
-    		cout<<"+";
-    	for(int i=ans.lastdigit; i>=0; i--)
-    		cout<<(int)ans.digits[i];
-    	cout<<endl<<endl;
-	}
-	/*
 	int n;
 	string R;
 	while(cin>>R>>n)
@@ -281,7 +230,23 @@ int main()			// Exponentiation
 				cout<<0;
 		}
 		
-		bool erase = false;	
+		bool erase = false;
+		/*
+		for(int i=ans.lastdigit; i>decimal_place-1; i--)
+			cout<<(int)ans.digits[i];
+		
+		int no_zero=0;
+		if(decimal_place!=0)
+		{
+			for(int i=decimal_place-1; i>=0; i--)
+				if(ans.digits[i]==char(0))
+					no_zero++;
+				else
+					no_zero=0;
+		}
+		for(int i=decimal_place-1; i>=no_zero; i--)
+			cout<<(int)ans.digits[i];
+		*/	
 		for(int i=ans.lastdigit; i>=0; i--)
 		{
 			if(i<=decimal_place-1 && ans.digits[i]==char(0) && decimal_place!=0)
@@ -304,6 +269,6 @@ int main()			// Exponentiation
 		cout<<endl;
 		long v=clock();
 		//cout<<(float) (v-u)/CLOCKS_PER_SEC<<endl;
-	}*/
-	return 0;
+	}
+	return 420;
 }
